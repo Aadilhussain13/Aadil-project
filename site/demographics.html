@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mira Road Community Survey - Demographics</title>
+<meta name="description" content="Demographics breakdown of the Mira Road survey: age, gender, family size, education, and locality profiles.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-text">
+      <p class="masthead-kicker">Field Survey Report &middot; 100 Respondents &middot; 12 Localities</p>
+      <h1>Mira Road Community Survey</h1>
+      <p class="masthead-sub">Education, Employment &amp; Financial Status of Residents - Mira Road, Mumbai</p>
+    </div>
+  </div>
+  <nav class="tabs" role="navigation" aria-label="Main navigation">
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation">
+      <span class="nav-toggle-label">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+          <rect class="bar bar1" x="0" y="0" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar2" x="0" y="6" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar3" x="0" y="12" width="18" height="2" fill="currentColor"/>
+        </svg>
+        Menu
+      </span>
+      <span class="nav-toggle-active"></span>
+    </button>
+    <div class="nav-links" id="navLinks" role="menubar">
+      <a href="index.html" role="menuitem">Overview</a>
+      <a href="demographics.html" class="active" role="menuitem">Demographics</a>
+      <a href="employment.html" role="menuitem">Employment</a>
+      <a href="income.html" role="menuitem">Income &amp; Finance</a>
+      <a href="respondents.html" role="menuitem">Respondent Data</a>
+      <a href="insights.html" role="menuitem">Key Findings</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <h2 class="section-title">Age &amp; Gender</h2>
+  <p class="section-note">Age is grouped into 5 bands; range spans 18 to 60 years.</p>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Age Distribution</h3>
+      <div class="chart-holder" id="chartAge"></div>
+    </div>
+    <div class="panel">
+      <h3>Gender Split</h3>
+      <div class="chart-holder" id="chartGender"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Household Composition</h2>
+  <p class="section-note">Number of members per household, and highest education level attained.</p>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Family Size</h3>
+      <div class="chart-holder" id="chartFamily"></div>
+    </div>
+    <div class="panel">
+      <h3>Education Category</h3>
+      <div class="chart-holder" id="chartEduCat"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Area Profile</h2>
+  <p class="section-note">Per-locality summary: headcount, average age, average income, and share currently working (employed or self-employed).</p>
+  <div class="grid-1">
+    <div class="panel">
+      <div class="table-scroll" style="max-height:none;">
+        <table class="data-table profile-table" id="areaTable">
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th class="num">Respondents</th>
+              <th class="num">Avg. Age</th>
+              <th class="num">Avg. Income</th>
+              <th class="num">Working Rate</th>
+              <th class="num">Avg. Family Size</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Source: SURVEY REPORT.pbix - Table (100 rows, 13 fields)</span>
+    <span>Report rebuilt as a static site from the original Power BI data model</span>
+  </footer>
+</main>
+
+<div class="byline">Prepared by <strong>Aadil Hussain Mansoori</strong> &middot; Roll No. 23 &middot; TY.CO</div>
+
+<script src="js/data.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/charts.js"></script>
+<script>
+  function renderAll() {
+    const ageBands = bin(RECORDS, 'age', [17, 25, 35, 45, 55, 60], ['18-25', '26-35', '36-45', '46-55', '56-60']);
+    barChartV(document.getElementById('chartAge'), Object.entries(ageBands));
+
+    donutChart(document.getElementById('chartGender'),
+      sortEntries(countBy(RECORDS, 'gender')), { centerLabel: 'respondents' });
+
+    const famSizes = countBy(RECORDS, 'familySize');
+    const famEntries = Object.keys(famSizes).sort((a, b) => a - b).map(k => [k, famSizes[k]]);
+    barChartV(document.getElementById('chartFamily'), famEntries);
+
+    donutChart(document.getElementById('chartEduCat'),
+      sortEntries(countBy(RECORDS, 'educationCategory')), { centerLabel: 'respondents' });
+  }
+  renderAll();
+
+  function buildAreaTable() {
+    const areas = [...new Set(RECORDS.map(r => r.area))];
+    const rows = areas.map(area => {
+      const sub = RECORDS.filter(r => r.area === area);
+      const working = sub.filter(r => r.employmentStatus === 'Employed' || r.employmentStatus === 'Self-Employed').length;
+      return {
+        area,
+        count: sub.length,
+        avgAge: mean(sub, 'age'),
+        avgIncome: mean(sub, 'income'),
+        workingRate: (working / sub.length) * 100,
+        avgFamily: mean(sub, 'familySize')
+      };
+    }).sort((a, b) => b.count - a.count);
+
+    document.querySelector('#areaTable tbody').innerHTML = rows.map(r => `
+      <tr>
+        <td>${r.area}</td>
+        <td class="num">${r.count}</td>
+        <td class="num">${r.avgAge.toFixed(1)}</td>
+        <td class="num">${fmtINR(r.avgIncome)}</td>
+        <td class="num">${r.workingRate.toFixed(0)}%</td>
+        <td class="num">${r.avgFamily.toFixed(1)}</td>
+      </tr>
+    `).join('');
+  }
+  buildAreaTable();
+
+  let resizeT;
+  window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(renderAll, 200); });
+</script>
+</body>
+</html>

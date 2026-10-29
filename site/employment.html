@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mira Road Community Survey - Employment</title>
+<meta name="description" content="Employment analysis of Mira Road survey: occupation breakdown, job-seeking activity, and cross-tabulations by area, gender, and financial status.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-text">
+      <p class="masthead-kicker">Field Survey Report &middot; 100 Respondents &middot; 12 Localities</p>
+      <h1>Mira Road Community Survey</h1>
+      <p class="masthead-sub">Education, Employment &amp; Financial Status of Residents - Mira Road, Mumbai</p>
+    </div>
+  </div>
+  <nav class="tabs" role="navigation" aria-label="Main navigation">
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation">
+      <span class="nav-toggle-label">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+          <rect class="bar bar1" x="0" y="0" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar2" x="0" y="6" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar3" x="0" y="12" width="18" height="2" fill="currentColor"/>
+        </svg>
+        Menu
+      </span>
+      <span class="nav-toggle-active"></span>
+    </button>
+    <div class="nav-links" id="navLinks" role="menubar">
+      <a href="index.html" role="menuitem">Overview</a>
+      <a href="demographics.html" role="menuitem">Demographics</a>
+      <a href="employment.html" class="active" role="menuitem">Employment</a>
+      <a href="income.html" role="menuitem">Income &amp; Finance</a>
+      <a href="respondents.html" role="menuitem">Respondent Data</a>
+      <a href="insights.html" role="menuitem">Key Findings</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <h2 class="section-title">Occupations</h2>
+  <p class="section-note">All reported occupations, ranked by number of respondents.</p>
+  <div class="grid-1">
+    <div class="panel">
+      <h3>Occupation Breakdown</h3>
+      <div class="chart-holder" id="chartOccupation"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Job-Seeking Activity</h2>
+  <p class="section-note">Share of each employment group currently looking for a job. All unemployed respondents are job-seeking; a portion of the employed and self-employed are seeking better positions.</p>
+  <div class="grid-1">
+    <div class="panel">
+      <h3>Job Seeking, by Employment Status</h3>
+      <div class="chart-holder" id="chartJobSeek"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Employment by Area &amp; Gender</h2>
+  <p class="section-note">Composition of the local workforce, broken down geographically and by gender.</p>
+  <div class="grid-2">
+    <div class="panel">
+      <h3>Employment Status, by Area</h3>
+      <div class="chart-holder" id="chartByArea"></div>
+    </div>
+    <div class="panel">
+      <h3>Employment Status, by Gender</h3>
+      <div class="chart-holder" id="chartByGender"></div>
+    </div>
+  </div>
+
+  <h2 class="section-title">Employment vs. Financial Status</h2>
+  <p class="section-note">Cross-tabulation of employment status against self-reported financial status (respondent count).</p>
+  <div class="grid-1">
+    <div class="panel">
+      <div class="table-scroll" style="max-height:none;">
+        <table class="data-table" id="crossTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Source: SURVEY REPORT.pbix - Table (100 rows, 13 fields)</span>
+    <span>Report rebuilt as a static site from the original Power BI data model</span>
+  </footer>
+</main>
+
+<div class="byline">Prepared by <strong>Aadil Hussain Mansoori</strong> &middot; Roll No. 23 &middot; TY.CO</div>
+
+<script src="js/data.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/charts.js"></script>
+<script>
+  const total = RECORDS.length;
+  const empCounts = countBy(RECORDS, 'employmentStatus');
+  const jobSeekingTotal = countBy(RECORDS, 'jobSeeking')['Yes'];
+  const unemployed = empCounts['Unemployed'];
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi"><span class="num">${empCounts['Employed']}</span><span class="label">Employed</span></div>
+    <div class="kpi"><span class="num">${empCounts['Self-Employed']}</span><span class="label">Self-Employed</span></div>
+    <div class="kpi"><span class="num">${empCounts['Unemployed']}</span><span class="label">Unemployed</span></div>
+    <div class="kpi"><span class="num">${empCounts['Student']}</span><span class="label">Students</span></div>
+    <div class="kpi"><span class="num">${jobSeekingTotal}</span><span class="label">Currently Job Seeking</span></div>
+  `;
+
+  function renderAll() {
+    barChartH(document.getElementById('chartOccupation'),
+      sortEntries(countBy(RECORDS, 'occupation')), { labelW: 150, rowH: 24 });
+
+    const jsOrder = ['Employed', 'Self-Employed', 'Student', 'Unemployed'];
+    const ctJobSeek = crosstab(RECORDS, 'employmentStatus', 'jobSeeking');
+    ctJobSeek.rowVals = jsOrder;
+    ctJobSeek.colVals = ['Yes', 'No'];
+    stackedBarH(document.getElementById('chartJobSeek'), ctJobSeek,
+      { colors: ['#8c3b3b', '#c9c2ab'], labelW: 120, rowH: 38 });
+
+    const ctArea = crosstab(RECORDS, 'area', 'employmentStatus');
+    ctArea.colVals = jsOrder;
+    ctArea.rowVals = ctArea.rowVals.sort();
+    stackedBarH(document.getElementById('chartByArea'), ctArea, { labelW: 120, rowH: 26 });
+
+    const ctGender = crosstab(RECORDS, 'gender', 'employmentStatus');
+    ctGender.colVals = jsOrder;
+    stackedBarH(document.getElementById('chartByGender'), ctGender, { labelW: 90, rowH: 34 });
+  }
+  renderAll();
+
+  function buildCrossTable() {
+    const finOrder = ['Low', 'Lower Middle', 'Middle', 'Upper Middle'];
+    const empOrder = ['Employed', 'Self-Employed', 'Student', 'Unemployed'];
+    const ct = crosstab(RECORDS, 'employmentStatus', 'financialStatus');
+    let html = '<thead><tr><th>Employment Status</th>' + finOrder.map(f => `<th class="num">${f}</th>`).join('') + '<th class="num">Total</th></tr></thead><tbody>';
+    empOrder.forEach(e => {
+      const rowTotal = finOrder.reduce((s, f) => s + (ct.table[e][f] || 0), 0);
+      html += `<tr><td>${e}</td>` + finOrder.map(f => `<td class="num">${ct.table[e][f] || 0}</td>`).join('') + `<td class="num"><strong>${rowTotal}</strong></td></tr>`;
+    });
+    html += '</tbody>';
+    document.getElementById('crossTable').innerHTML = html;
+  }
+  buildCrossTable();
+
+  let resizeT;
+  window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(renderAll, 200); });
+</script>
+</body>
+</html>

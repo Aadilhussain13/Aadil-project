@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mira Road Community Survey - Respondent Data</title>
+<meta name="description" content="Full respondent table for the Mira Road Community Survey. Search, filter, sort, and export all 100 records to Excel.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-text">
+      <p class="masthead-kicker">Field Survey Report &middot; 100 Respondents &middot; 12 Localities</p>
+      <h1>Mira Road Community Survey</h1>
+      <p class="masthead-sub">Education, Employment &amp; Financial Status of Residents - Mira Road, Mumbai</p>
+    </div>
+  </div>
+  <nav class="tabs" role="navigation" aria-label="Main navigation">
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation">
+      <span class="nav-toggle-label">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+          <rect class="bar bar1" x="0" y="0" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar2" x="0" y="6" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar3" x="0" y="12" width="18" height="2" fill="currentColor"/>
+        </svg>
+        Menu
+      </span>
+      <span class="nav-toggle-active"></span>
+    </button>
+    <div class="nav-links" id="navLinks" role="menubar">
+      <a href="index.html" role="menuitem">Overview</a>
+      <a href="demographics.html" role="menuitem">Demographics</a>
+      <a href="employment.html" role="menuitem">Employment</a>
+      <a href="income.html" role="menuitem">Income &amp; Finance</a>
+      <a href="respondents.html" class="active" role="menuitem">Respondent Data</a>
+      <a href="insights.html" role="menuitem">Key Findings</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <h2 class="section-title">Full Respondent Table</h2>
+  <p class="section-note">All 100 records from the survey. Search by name, area, or occupation; filter by category; click a column heading to sort.</p>
+
+  <div class="filter-bar">
+    <input type="text" id="searchBox" class="filter-search" placeholder="Search name, area, occupation&hellip;" aria-label="Search respondents">
+    <select id="areaFilter" aria-label="Filter by area"><option value="">All Areas</option></select>
+    <select id="empFilter" aria-label="Filter by employment status"><option value="">All Employment</option></select>
+    <select id="genderFilter" aria-label="Filter by gender"><option value="">All Genders</option></select>
+    <select id="finFilter" aria-label="Filter by financial status"><option value="">All Financial Status</option></select>
+    <button type="button" id="exportBtn" class="btn-export" aria-label="Export to Excel">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M7 1v8M4 6l3 3 3-3M2 10v2a1 1 0 001 1h8a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Export to Excel
+    </button>
+  </div>
+
+  <div class="table-scroll">
+    <table class="data-table" id="dataTable">
+      <thead>
+        <tr>
+          <th data-key="sr" class="num">SR</th>
+          <th data-key="name">Name</th>
+          <th data-key="age" class="num">Age</th>
+          <th data-key="gender">Gender</th>
+          <th data-key="area">Area</th>
+          <th data-key="education">Education</th>
+          <th data-key="employmentStatus">Employment</th>
+          <th data-key="occupation">Occupation</th>
+          <th data-key="income" class="num">Income (₹)</th>
+          <th data-key="familySize" class="num">Family Size</th>
+          <th data-key="jobSeeking">Job Seeking</th>
+          <th data-key="financialStatus">Financial Status</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <p class="result-count" id="resultCount" aria-live="polite"></p>
+
+  <footer>
+    <span>Source: SURVEY REPORT.pbix - Table (100 rows, 13 fields)</span>
+    <span>Report rebuilt as a static site from the original Power BI data model</span>
+  </footer>
+</main>
+
+<div class="byline">Prepared by <strong>Aadil Hussain Mansoori</strong> &middot; Roll No. 23 &middot; TY.CO</div>
+
+<!-- SheetJS for Excel export -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+
+<script src="js/data.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  let sortKey = 'sr', sortDir = 1;
+
+  const COLUMN_LABELS = {
+    sr: 'SR', name: 'Name', age: 'Age', gender: 'Gender', area: 'Area',
+    education: 'Education', employmentStatus: 'Employment', occupation: 'Occupation',
+    income: 'Income (₹)', familySize: 'Family Size', jobSeeking: 'Job Seeking', financialStatus: 'Financial Status'
+  };
+
+  function uniqueSorted(key) {
+    return [...new Set(RECORDS.map(r => r[key]))].sort();
+  }
+
+  function populateSelect(id, key) {
+    const sel = document.getElementById(id);
+    uniqueSorted(key).forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      sel.appendChild(opt);
+    });
+  }
+  populateSelect('areaFilter', 'area');
+  populateSelect('empFilter', 'employmentStatus');
+  populateSelect('genderFilter', 'gender');
+  populateSelect('finFilter', 'financialStatus');
+
+  function currentRows() {
+    const q = document.getElementById('searchBox').value.trim().toLowerCase();
+    const area = document.getElementById('areaFilter').value;
+    const emp = document.getElementById('empFilter').value;
+    const gender = document.getElementById('genderFilter').value;
+    const fin = document.getElementById('finFilter').value;
+
+    let rows = RECORDS.filter(r => {
+      if (area && r.area !== area) return false;
+      if (emp && r.employmentStatus !== emp) return false;
+      if (gender && r.gender !== gender) return false;
+      if (fin && r.financialStatus !== fin) return false;
+      if (q && !(r.name.toLowerCase().includes(q) || r.area.toLowerCase().includes(q) || r.occupation.toLowerCase().includes(q))) return false;
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      const av = a[sortKey], bv = b[sortKey];
+      if (typeof av === 'number') return (av - bv) * sortDir;
+      return String(av).localeCompare(String(bv)) * sortDir;
+    });
+
+    return rows;
+  }
+
+  function render() {
+    const rows = currentRows();
+    document.getElementById('tableBody').innerHTML = rows.map(r => `
+      <tr>
+        <td class="num">${r.sr}</td>
+        <td>${r.name}</td>
+        <td class="num">${r.age}</td>
+        <td>${r.gender}</td>
+        <td>${r.area}</td>
+        <td>${r.education}</td>
+        <td>${r.employmentStatus}</td>
+        <td>${r.occupation}</td>
+        <td class="num">${r.income.toLocaleString('en-IN')}</td>
+        <td class="num">${r.familySize}</td>
+        <td>${r.jobSeeking}</td>
+        <td>${r.financialStatus}</td>
+      </tr>
+    `).join('');
+    document.getElementById('resultCount').textContent = `Showing ${rows.length} of ${RECORDS.length} respondents`;
+  }
+
+  document.querySelectorAll('#dataTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+      document.querySelectorAll('#dataTable thead th').forEach(t => t.textContent = t.textContent.replace(/ [▲▼]$/, ''));
+      th.textContent += sortDir === 1 ? ' ▲' : ' ▼';
+      render();
+      showToast(`Sorted by ${COLUMN_LABELS[key]} (${sortDir === 1 ? 'ascending' : 'descending'})`);
+    });
+  });
+
+  let filterDebounce;
+  ['searchBox', 'areaFilter', 'empFilter', 'genderFilter', 'finFilter'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      render();
+      clearTimeout(filterDebounce);
+      filterDebounce = setTimeout(() => {
+        showToast(`Showing ${currentRows().length} of ${RECORDS.length} respondents`);
+      }, 500);
+    });
+  });
+
+  // ---- Export to Excel (.xlsx) using SheetJS ----
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const rows = currentRows();
+    const headers = Object.keys(COLUMN_LABELS);
+
+    // Build array of objects with human-readable column names
+    const sheetData = rows.map(r => {
+      const obj = {};
+      headers.forEach(h => { obj[COLUMN_LABELS[h]] = r[h]; });
+      return obj;
+    });
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(sheetData, { header: headers.map(h => COLUMN_LABELS[h]) });
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 5 },  // SR
+      { wch: 22 }, // Name
+      { wch: 6 },  // Age
+      { wch: 10 }, // Gender
+      { wch: 20 }, // Area
+      { wch: 14 }, // Education
+      { wch: 16 }, // Employment
+      { wch: 18 }, // Occupation
+      { wch: 12 }, // Income
+      { wch: 12 }, // Family Size
+      { wch: 12 }, // Job Seeking
+      { wch: 16 }, // Financial Status
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Respondents');
+
+    // Download as .xlsx
+    XLSX.writeFile(wb, 'mira-road-survey-respondents.xlsx');
+    showToast(`Exported ${rows.length} respondents to Excel`);
+  });
+
+  render();
+</script>
+</body>
+</html>

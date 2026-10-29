@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mira Road Community Survey - Key Findings</title>
+<meta name="description" content="Key findings and insights from the Mira Road Community Survey on employment, income, education, and geographic disparities.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-text">
+      <p class="masthead-kicker">Field Survey Report &middot; 100 Respondents &middot; 12 Localities</p>
+      <h1>Mira Road Community Survey</h1>
+      <p class="masthead-sub">Education, Employment &amp; Financial Status of Residents - Mira Road, Mumbai</p>
+    </div>
+  </div>
+  <nav class="tabs" role="navigation" aria-label="Main navigation">
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Toggle navigation">
+      <span class="nav-toggle-label">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true">
+          <rect class="bar bar1" x="0" y="0" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar2" x="0" y="6" width="18" height="2" fill="currentColor"/>
+          <rect class="bar bar3" x="0" y="12" width="18" height="2" fill="currentColor"/>
+        </svg>
+        Menu
+      </span>
+      <span class="nav-toggle-active"></span>
+    </button>
+    <div class="nav-links" id="navLinks" role="menubar">
+      <a href="index.html" role="menuitem">Overview</a>
+      <a href="demographics.html" role="menuitem">Demographics</a>
+      <a href="employment.html" role="menuitem">Employment</a>
+      <a href="income.html" role="menuitem">Income &amp; Finance</a>
+      <a href="respondents.html" role="menuitem">Respondent Data</a>
+      <a href="insights.html" class="active" role="menuitem">Key Findings</a>
+    </div>
+  </nav>
+</header>
+
+<main class="wrap">
+
+  <h2 class="section-title">Key Findings</h2>
+  <p class="section-note">Observations drawn directly from the 100-respondent dataset.</p>
+
+  <div id="findings"></div>
+
+  <footer>
+    <span>Source: SURVEY REPORT.pbix - Table (100 rows, 13 fields)</span>
+    <span>Report rebuilt as a static site from the original Power BI data model</span>
+  </footer>
+</main>
+
+<div class="byline">Prepared by <strong>Aadil Hussain Mansoori</strong> &middot; Roll No. 23 &middot; TY.CO</div>
+
+<script src="js/data.js"></script>
+<script src="js/analytics.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const total = RECORDS.length;
+  const empCounts = countBy(RECORDS, 'employmentStatus');
+  const workingCount = empCounts['Employed'] + empCounts['Self-Employed'];
+  const unemployedCount = empCounts['Unemployed'];
+  const studentCount = empCounts['Student'];
+
+  const incByEdu = meanBy(RECORDS, 'education', 'income');
+  const pgIncome = incByEdu['Postgraduate'];
+  const belowIncome = incByEdu['Below 10th'];
+  const gapMultiple = (pgIncome / belowIncome).toFixed(1);
+
+  const incByArea = meanBy(RECORDS, 'area', 'income');
+  const areaSorted = Object.entries(incByArea).sort((a, b) => b[1] - a[1]);
+  const topArea = areaSorted[0], bottomArea = areaSorted[areaSorted.length - 1];
+  const areaGap = (topArea[1] / bottomArea[1]).toFixed(1);
+
+  const employedJobSeeking = RECORDS.filter(r => r.employmentStatus === 'Employed' && r.jobSeeking === 'Yes').length;
+  const employedTotal = empCounts['Employed'];
+
+  const eduCat = crosstab(RECORDS, 'educationCategory', 'financialStatus');
+  const lessEduLow = eduCat.table['Less Educated']['Low'] || 0;
+  const lessEduTotal = countBy(RECORDS, 'educationCategory')['Less Educated'];
+  const lessEduUpperMid = eduCat.table['Less Educated']['Upper Middle'] || 0;
+  const eduTotal = countBy(RECORDS, 'educationCategory')['Educated'];
+  const eduUpperMid = eduCat.table['Educated']['Upper Middle'] || 0;
+
+  const genderEdu = crosstab(RECORDS, 'gender', 'educationCategory');
+  const femaleTotal = countBy(RECORDS, 'gender')['Female'];
+  const maleTotal = countBy(RECORDS, 'gender')['Male'];
+  const femaleEducatedPct = ((genderEdu.table['Female']['Educated'] || 0) / femaleTotal * 100).toFixed(0);
+  const maleEducatedPct = ((genderEdu.table['Male']['Educated'] || 0) / maleTotal * 100).toFixed(0);
+
+  const occIncome = meanBy(RECORDS, 'occupation', 'income');
+  const occCounts = countBy(RECORDS, 'occupation');
+  const housewifeIncome = occIncome['Housewife'];
+  const housewifeCount = occCounts['Housewife'];
+
+  const findings = [
+    {
+      tag: 'Employment',
+      cls: '',
+      html: `<strong>${pct(workingCount, total)} of respondents are employed or self-employed</strong> (${workingCount} of ${total}). ${unemployedCount} respondents (${pct(unemployedCount, total)}) are unemployed and ${studentCount} (${pct(studentCount, total)}) are students.`
+    },
+    {
+      tag: 'Job Seeking',
+      cls: 'alt',
+      html: `<strong>All ${unemployedCount} unemployed respondents report actively seeking work</strong>, compared to ${employedJobSeeking} of ${employedTotal} already-employed respondents (${pct(employedJobSeeking, employedTotal)}) who are still job hunting - a sign of under-employment among the currently working.`
+    },
+    {
+      tag: 'Education & Income',
+      cls: 'gold',
+      html: `<strong>Income rises sharply with education.</strong> Postgraduates average ${fmtINR(pgIncome)}/month versus ${fmtINR(belowIncome)}/month for those with schooling below 10th grade - a ${gapMultiple}&times; gap.`
+    },
+    {
+      tag: 'Geography',
+      cls: '',
+      html: `<strong>${topArea[0]} has the highest average income</strong> (${fmtINR(topArea[1])}/month), while <strong>${bottomArea[0]} has the lowest</strong> (${fmtINR(bottomArea[1])}/month) - a ${areaGap}&times; difference between localities.`
+    },
+    {
+      tag: 'Financial Status',
+      cls: 'alt',
+      html: `<strong>Education category strongly predicts financial status.</strong> ${eduUpperMid} of ${eduTotal} "Educated" respondents (${pct(eduUpperMid, eduTotal)}) fall in the Upper-Middle bracket, versus ${lessEduUpperMid} of ${lessEduTotal} "Less Educated" respondents (${pct(lessEduUpperMid, lessEduTotal)}). Conversely, ${lessEduLow} of ${lessEduTotal} Less Educated respondents (${pct(lessEduLow, lessEduTotal)}) fall in the Low bracket, versus ${pct(eduCat.table['Educated']['Low'] || 0, eduTotal)} of the Educated group.`
+    },
+    {
+      tag: 'Gender',
+      cls: 'gold',
+      html: `<strong>No meaningful education gap between genders.</strong> ${femaleEducatedPct}% of female respondents fall in the "Educated" category versus ${maleEducatedPct}% of male respondents - a near-identical split.`
+    },
+    {
+      tag: 'Occupation',
+      cls: '',
+      html: `<strong>Unpaid domestic work shows up clearly in the income data.</strong> The ${housewifeCount} respondents in Housewife occupations report an average income of ${fmtINR(housewifeIncome)}/month, among the lowest of any occupation group.`
+    }
+  ];
+
+  document.getElementById('findings').innerHTML = findings.map(f => `
+    <div class="finding ${f.cls}">
+      <span class="tag">${f.tag}</span>
+      <p>${f.html}</p>
+    </div>
+  `).join('');
+</script>
+</body>
+</html>
